@@ -11,6 +11,7 @@ namespace SimpleFileBrowser
         [SerializeField] private string m_StringKey;
 
         private TMP_Text m_TmpText;
+        private bool m_RequestUpdateOnEnable;
 
         public void ForceRefresh()
         {
@@ -22,7 +23,27 @@ namespace SimpleFileBrowser
             LocalizationSettings.SelectedLocaleChanged += OnSelectedLocaleChanged;
         }
 
+        private void OnEnable()
+        {
+            if (!m_RequestUpdateOnEnable)
+                return;
+
+            m_RequestUpdateOnEnable = false;
+            Refresh();
+        }
+
         private void OnSelectedLocaleChanged(Locale locale)
+        {
+            if (!isActiveAndEnabled)
+            {
+                m_RequestUpdateOnEnable = true;
+                return;
+            }
+
+            Refresh();
+        }
+
+        private void Refresh()
         {
             var skin = FileBrowser.Skin;
 
