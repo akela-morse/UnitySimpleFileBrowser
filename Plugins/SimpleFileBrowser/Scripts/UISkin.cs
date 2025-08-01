@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Localization;
 using UnityEngine.UI;
 
 namespace SimpleFileBrowser
@@ -12,6 +15,41 @@ namespace SimpleFileBrowser
 		public string extension;
 		public Sprite icon;
 	}
+
+    [Serializable]
+    public class LocalizedText
+    {
+        private static readonly Dictionary<string, FieldInfo> m_sFields = typeof(LocalizedText).GetFields(BindingFlags.Instance | BindingFlags.Public).ToDictionary(x => x.Name, x => x);
+
+        [Header("Top View")]
+        public LocalizedString searchPlaceholder;
+
+        [Header("Bottom View")]
+        public LocalizedString cancelButton;
+        public LocalizedString filenamePlaceholder;
+        public LocalizedString hiddenFilesToggle;
+
+        [Header("Context Menu")]
+        public LocalizedString selectAll;
+        public LocalizedString deselectAll;
+        public LocalizedString newFolder;
+        public LocalizedString delete;
+        public LocalizedString rename;
+
+        [Header("Dialogs")]
+        public LocalizedString yesButton;
+        public LocalizedString noButton;
+        public LocalizedString okButton;
+        public LocalizedString deleteOperation;
+        public LocalizedString overwriteOperation;
+        public LocalizedString accessRestricted;
+        public LocalizedString fileListOverflow;
+
+        public string GetStringFromKey(string key)
+        {
+            return ((LocalizedString)m_sFields[key].GetValue(this))?.GetLocalizedString() ?? string.Empty;
+        }
+    }
 
 	[CreateAssetMenu( fileName = "UI Skin", menuName = "yasirkula/SimpleFileBrowser/UI Skin", order = 111 )]
 	public class UISkin : ScriptableObject
@@ -35,6 +73,14 @@ namespace SimpleFileBrowser
 #endif
 
 #pragma warning disable 0649
+        [SerializeField]
+        private LocalizedText m_LocalizedText;
+        public LocalizedText LocalizedText
+        {
+            get { return m_LocalizedText; }
+            set { if( m_LocalizedText != value ) { m_LocalizedText = value; m_version++; } }
+        }
+
 		[Header( "General" )]
 		[SerializeField]
 		private TMP_FontAsset m_font;

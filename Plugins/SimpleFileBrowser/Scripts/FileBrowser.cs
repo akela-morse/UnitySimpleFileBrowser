@@ -10,6 +10,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using TMPro;
+using UnityEngine.Localization;
+using UnityEngine.SocialPlatforms;
 #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
 using UnityEngine.InputSystem;
 #endif
@@ -1298,6 +1300,9 @@ namespace SimpleFileBrowser
 			m_skinPrevFontSize = m_skin.FontSize;
 			m_skinPrevDriveIcon = m_skin.DriveIcon;
 			m_skinPrevFolderIcon = m_skin.FolderIcon;
+
+            foreach (var localizeText in GetComponentsInChildren<FileBrowserLocalizeText>(includeInactive: true))
+                localizeText.ForceRefresh();
 		}
 		#endregion
 
@@ -2847,23 +2852,23 @@ namespace SimpleFileBrowser
 		#region File Browser Functions (static)
 		public static bool ShowSaveDialog( OnSuccess onSuccess, OnCancel onCancel,
 										   PickMode pickMode, bool allowMultiSelection = false,
-										   string initialPath = null, string initialFilename = null,
-										   string title = "Save", string saveButtonText = "Save" )
+										   string initialPath = null, LocalizedString initialFilename = null,
+                                           LocalizedString title = null, LocalizedString saveButtonText = null )
 		{
 			return ShowDialogInternal( onSuccess, onCancel, pickMode, allowMultiSelection, pickMode != PickMode.Folders, initialPath, initialFilename, title, saveButtonText );
 		}
 
 		public static bool ShowLoadDialog( OnSuccess onSuccess, OnCancel onCancel,
 										   PickMode pickMode, bool allowMultiSelection = false,
-										   string initialPath = null, string initialFilename = null,
-										   string title = "Load", string loadButtonText = "Select" )
+										   string initialPath = null, LocalizedString initialFilename = null,
+                                           LocalizedString title = null, LocalizedString loadButtonText = null )
 		{
 			return ShowDialogInternal( onSuccess, onCancel, pickMode, allowMultiSelection, false, initialPath, initialFilename, title, loadButtonText );
 		}
 
 		private static bool ShowDialogInternal( OnSuccess onSuccess, OnCancel onCancel,
 												PickMode pickMode, bool allowMultiSelection, bool acceptNonExistingFilename,
-												string initialPath, string initialFilename, string title, string submitButtonText )
+												string initialPath, LocalizedString initialFilename, LocalizedString title, LocalizedString submitButtonText )
 		{
 			// Instead of ignoring this dialog request, let's just override the currently visible dialog's properties
 			//if( Instance.gameObject.activeSelf )
@@ -2877,11 +2882,11 @@ namespace SimpleFileBrowser
 
 			Instance.PickerMode = pickMode;
 			Instance.AllowMultiSelection = allowMultiSelection;
-			Instance.Title = title;
-			Instance.SubmitButtonText = submitButtonText;
+			Instance.Title = title?.GetLocalizedString() ?? string.Empty;
+			Instance.SubmitButtonText = submitButtonText?.GetLocalizedString() ?? string.Empty;
 			Instance.AcceptNonExistingFilename = acceptNonExistingFilename;
 
-			Instance.Show( initialPath, initialFilename );
+			Instance.Show( initialPath, initialFilename?.GetLocalizedString() ?? string.Empty );
 
 			return true;
 		}
@@ -2892,8 +2897,8 @@ namespace SimpleFileBrowser
 		}
 
 		public static IEnumerator WaitForSaveDialog( PickMode pickMode, bool allowMultiSelection = false,
-													 string initialPath = null, string initialFilename = null,
-													 string title = "Save", string saveButtonText = "Save" )
+													 string initialPath = null, LocalizedString initialFilename = null,
+													 LocalizedString title = null, LocalizedString saveButtonText = null )
 		{
 			bool? result = null;
 			if( !ShowSaveDialog( ( paths ) => result = true, () => result = false, pickMode, allowMultiSelection, initialPath, initialFilename, title, saveButtonText ) )
@@ -2904,8 +2909,8 @@ namespace SimpleFileBrowser
 		}
 
 		public static IEnumerator WaitForLoadDialog( PickMode pickMode, bool allowMultiSelection = false,
-													 string initialPath = null, string initialFilename = null,
-													 string title = "Load", string loadButtonText = "Select" )
+													 string initialPath = null, LocalizedString initialFilename = null,
+                                                     LocalizedString title = null, LocalizedString loadButtonText = null )
 		{
 			bool? result = null;
 			if( !ShowLoadDialog( ( paths ) => result = true, () => result = false, pickMode, allowMultiSelection, initialPath, initialFilename, title, loadButtonText ) )
@@ -2914,6 +2919,30 @@ namespace SimpleFileBrowser
 			while( !result.HasValue )
 				yield return null;
 		}
+
+        public static async Awaitable<string[]> SaveDialogAsync( PickMode pickMode, bool allowMultiSelection = false,
+            string initialPath = null, LocalizedString initialFilename = null,
+            LocalizedString title = null, LocalizedString saveButtonText = null )
+        {
+            var completionSource = new AwaitableCompletionSource<string[]>();
+
+            if( !ShowSaveDialog( paths => completionSource.SetResult(paths), completionSource.SetCanceled, pickMode, allowMultiSelection, initialPath, initialFilename, title, saveButtonText ) )
+                return null;
+
+            return await completionSource.Awaitable;
+        }
+
+        public static async Awaitable<string[]> LoadDialogAsync( PickMode pickMode, bool allowMultiSelection = false,
+            string initialPath = null, LocalizedString initialFilename = null,
+            LocalizedString title = null, LocalizedString loadButtonText = null )
+        {
+            var completionSource = new AwaitableCompletionSource<string[]>();
+
+            if( !ShowLoadDialog( paths => completionSource.SetResult(paths), completionSource.SetCanceled, pickMode, allowMultiSelection, initialPath, initialFilename, title, loadButtonText ) )
+                return null;
+
+            return await completionSource.Awaitable;
+        }
 
 		public static bool AddQuickLink( string name, string path, Sprite icon = null )
 		{
